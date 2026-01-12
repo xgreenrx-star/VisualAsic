@@ -1,5 +1,6 @@
 from PyQt6.QtWidgets import QWidget, QFormLayout, QLineEdit, QSpinBox, QLabel, QPushButton, QComboBox
 from PyQt6.QtCore import pyqtSignal
+from PyQt6.QtGui import QColor, QBrush
 
 class PropertyInspector(QWidget):
     # signal emitted when user requests to open/create an event handler
@@ -115,7 +116,7 @@ class PropertyInspector(QWidget):
         item = items[0]
         c = self.txt_color.text()
         try:
-            item.setBrush(QColor(c))
+            item.setBrush(QBrush(QColor(c)))
             item._color = c
         except Exception:
             pass
