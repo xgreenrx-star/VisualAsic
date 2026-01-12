@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "form": {
+    "id": "DemoForm",
+    "title": "Demo",
+    "size": { "w": 320, "h": 240 }
+  },
+  "controls": [
+    {
+      "type": "Button",
+      "id": "btnOk",
+      "bounds": { "x": 220, "y": 200, "w": 80, "h": 30 },
+      "text": "OK",
+      "properties": { "bg": "#008800", "fontSize": 12 },
+      "events": { "Click": "btnOk_Click" },
+      "tags": ["primary"]
+    },
+    {
+      "type": "TextBox",
+      "id": "txtName",
+      "bounds": { "x": 10, "y": 10, "w": 200, "h": 24 },
+      "properties": { "placeholder": "Name" },
+      "events": { "OnEnter": "txtName_Enter" }
+    }
+  ]
+}
