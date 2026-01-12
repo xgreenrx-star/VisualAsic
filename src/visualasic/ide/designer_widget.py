@@ -1,6 +1,6 @@
 from PyQt6.QtWidgets import QGraphicsView, QGraphicsScene, QGraphicsRectItem, QGraphicsTextItem
 from PyQt6.QtCore import Qt, QRectF
-from PyQt6.QtGui import QBrush, QColor
+from PyQt6.QtGui import QBrush, QColor, QPainter
 
 
 class ButtonItem(QGraphicsRectItem):
@@ -22,7 +22,12 @@ class DesignerCanvas(QGraphicsView):
         super().__init__(parent)
         self._scene = QGraphicsScene(0, 0, width, height)
         self.setScene(self._scene)
-        self.setRenderHints(self.renderHints() | Qt.RenderHint.Antialiasing)
+        # Enable antialiasing for nicer visuals
+        try:
+            self.setRenderHints(self.renderHints() | QPainter.RenderHint.Antialiasing)
+        except Exception:
+            # Fallback if enum naming differs
+            self.setRenderHints(self.renderHints())
         self.setFixedSize(width + 2, height + 2)
 
     def add_button(self, x: float, y: float, w: float = 80, h: float = 30, text: str = "Button") -> ButtonItem:

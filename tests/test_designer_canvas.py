@@ -1,5 +1,5 @@
 from visualasic.ide.designer_widget import DesignerCanvas
-from PyQt6.QtCore import QPoint
+from PyQt6.QtCore import QPoint, Qt
 
 
 def test_add_button_and_drag(qtbot):

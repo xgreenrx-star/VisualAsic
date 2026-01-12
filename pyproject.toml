@@ -5,4 +5,4 @@ description = "Prototype Visual Form Designer for Asic (VB6-like)"
 authors = ["Your Name <you@example.com>"]
 
 [tool.pytest]
-addopts = "-q"
+addopts = ["-q"]
