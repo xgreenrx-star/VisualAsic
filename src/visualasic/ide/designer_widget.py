@@ -4,15 +4,23 @@ from PyQt6.QtGui import QBrush, QColor, QPainter
 
 
 class ButtonItem(QGraphicsRectItem):
-    def __init__(self, x: float, y: float, w: float, h: float, text: str = "Button"):
+    def __init__(self, x: float, y: float, w: float, h: float, text: str = "Button", object_id: str = None):
         super().__init__(QRectF(0, 0, w, h))
         self.setPos(x, y)
-        self.setBrush(QBrush(QColor("#008800")))
+        self._color = "#008800"
+        self.setBrush(QBrush(QColor(self._color)))
         self.setFlags(QGraphicsRectItem.GraphicsItemFlag.ItemIsSelectable | QGraphicsRectItem.GraphicsItemFlag.ItemIsMovable)
         self.text = QGraphicsTextItem(text, parent=self)
+        # store id for inspector/event mapping
+        self.object_id = object_id or text
         # center text roughly
         tr = self.text.boundingRect()
         self.text.setPos((w - tr.width()) / 2, (h - tr.height()) / 2)
+
+    def mouseDoubleClickEvent(self, event):
+        # bubble up to the scene/view; the canvas will handle event opening
+        super().mouseDoubleClickEvent(event)
+        # no-op here; canvas can inspect double-clicked item via scene event
 
 
 class DesignerCanvas(QGraphicsView):
