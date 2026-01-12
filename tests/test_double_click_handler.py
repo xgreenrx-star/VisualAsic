@@ -1,5 +1,6 @@
 from visualasic.ide.designer_widget import DesignerCanvas
 from visualasic.handlers import HandlerManager
+from PyQt6.QtCore import Qt
 from pathlib import Path
 
 
@@ -21,7 +22,7 @@ def test_double_click_creates_handler(tmp_path, qtbot):
     # simulate double click at the button center
     center_scene = btn.mapToScene(btn.boundingRect().center())
     center_view = canvas.mapFromScene(center_scene)
-    qtbot.mouseDClick(canvas.viewport(), qtbot.leftClick, pos=center_view)
+    qtbot.mouseDClick(canvas.viewport(), Qt.MouseButton.LeftButton, pos=center_view)
 
     p = hm.handler_path('btnOk_Click')
     assert p.exists()
