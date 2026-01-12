@@ -1,6 +1,7 @@
 from PyQt6.QtWidgets import QGraphicsView, QGraphicsScene, QGraphicsRectItem, QGraphicsTextItem
-from PyQt6.QtCore import Qt, QRectF, pyqtSignal
+from PyQt6.QtCore import Qt, QRectF, pyqtSignal, QPointF
 from PyQt6.QtGui import QBrush, QColor, QPainter
+from PyQt6.QtWidgets import QGraphicsItem
 
 
 class BaseControlItem(QGraphicsRectItem):
@@ -32,7 +33,7 @@ class BaseControlItem(QGraphicsRectItem):
     def itemChange(self, change, value):
         # Handle position snapping if moved
         try:
-            if change == QGraphicsRectItem.GraphicsItemChange.ItemPositionChange:
+            if change == QGraphicsItem.GraphicsItemChange.ItemPositionChange:
                 new_pos = value
                 sc = self.scene()
                 if sc is None:
@@ -47,10 +48,32 @@ class BaseControlItem(QGraphicsRectItem):
                     # round to nearest grid
                     nx = round(new_pos.x() / gs) * gs
                     ny = round(new_pos.y() / gs) * gs
-                    return QPointF(nx, ny)
+                    return QPointF(float(nx), float(ny))
         except Exception:
             pass
         return super().itemChange(change, value)
+
+    def setPos(self, *args):
+        # Snap programmatic setPos calls as well
+        try:
+            if len(args) == 1:
+                p = args[0]
+                x, y = p.x(), p.y()
+            else:
+                x, y = float(args[0]), float(args[1])
+            sc = self.scene()
+            if sc:
+                views = sc.views()
+                if views:
+                    v = views[0]
+                    if getattr(v, 'snap_to_grid', False):
+                        gs = getattr(v, 'grid_size', 8)
+                        nx = round(x / gs) * gs
+                        ny = round(y / gs) * gs
+                        return super().setPos(float(nx), float(ny))
+        except Exception:
+            pass
+        return super().setPos(*args)
 
 
 class ButtonItem(BaseControlItem):
@@ -110,11 +133,11 @@ class DesignerCanvas(QGraphicsView):
         top = int(rect.top()) - (int(rect.top()) % gs)
         x = left
         while x < rect.right():
-            painter.drawLine(x, rect.top(), x, rect.bottom())
+            painter.drawLine(QPointF(float(x), float(rect.top())), QPointF(float(x), float(rect.bottom())))
             x += gs
         y = top
         while y < rect.bottom():
-            painter.drawLine(rect.left(), y, rect.right(), y)
+            painter.drawLine(QPointF(float(rect.left()), float(y)), QPointF(float(rect.right()), float(y)))
             y += gs
 
     @property

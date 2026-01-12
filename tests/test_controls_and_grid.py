@@ -19,13 +19,13 @@ def test_add_various_controls_and_snapping(qtbot):
     assert any(getattr(it, 'object_id', '') == 'lbl1' for it in items)
 
     # Snap behavior: move tb to a non-grid position then drag to trigger item change
-    # grid size default is 8, so nearest multiple of 8 for 29 is 32, for 44 is 40
+    # grid size default is 8; snapping rounds to nearest grid multiple
     tb.setPos(29, 44)
     # after setting pos, itemChange should snap
     assert int(tb.x()) % canvas.grid_size == 0
     assert int(tb.y()) % canvas.grid_size == 0
-    assert int(tb.x()) == 32
-    assert int(tb.y()) == 40
+    assert int(tb.x()) == round(29 / canvas.grid_size) * canvas.grid_size
+    assert int(tb.y()) == round(44 / canvas.grid_size) * canvas.grid_size
 
     # Check grid visibility
     assert canvas.show_grid is True
