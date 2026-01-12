@@ -32,6 +32,16 @@ class PropertyInspector(QWidget):
         self.layout.addRow("Events", self.events)
         self.layout.addRow(self.open_button)
 
+        # Grid and snapping controls
+        self.cb_snap = QComboBox()
+        self.cb_snap.addItem('On')
+        self.cb_snap.addItem('Off')
+        self.spin_grid = QSpinBox()
+        self.spin_grid.setRange(2, 64)
+        self.spin_grid.setValue(8)
+        self.layout.addRow("Snap", self.cb_snap)
+        self.layout.addRow("Grid size", self.spin_grid)
+
         # limits
         self.spin_x.setRange(-10000, 10000)
         self.spin_y.setRange(-10000, 10000)
@@ -47,6 +57,10 @@ class PropertyInspector(QWidget):
         self.spin_h.valueChanged.connect(self._apply_geometry)
         self.txt_color.editingFinished.connect(self._apply_color)
         self.open_button.clicked.connect(self._open_event_handler)
+
+        # grid hooks
+        self.cb_snap.currentTextChanged.connect(self._apply_snap_setting)
+        self.spin_grid.valueChanged.connect(self._apply_grid_size)
 
     def _on_selection_changed(self):
         items = [it for it in self.canvas.scene.items() if it.isSelected()]
@@ -131,6 +145,19 @@ class PropertyInspector(QWidget):
         event = self.events.currentText()
         handler_name = f"{control_id}_{event}"
         self.open_handler.emit(handler_name)
+
+    def _apply_snap_setting(self, val: str):
+        # Toggle snap on the canvas
+        if val == 'On':
+            self.canvas.snap_to_grid = True
+        else:
+            self.canvas.snap_to_grid = False
+
+    def _apply_grid_size(self, val: int):
+        try:
+            self.canvas.grid_size = int(val)
+        except Exception:
+            pass
 
     def _clear(self):
         self.id_label.setText("")
