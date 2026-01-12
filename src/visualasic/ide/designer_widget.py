@@ -3,8 +3,9 @@ from PyQt6.QtCore import Qt, QRectF, pyqtSignal
 from PyQt6.QtGui import QBrush, QColor, QPainter
 
 
-class ButtonItem(QGraphicsRectItem):
-    def __init__(self, x: float, y: float, w: float, h: float, text: str = "Button", object_id: str = None):
+class BaseControlItem(QGraphicsRectItem):
+    """Base class for simple rectangular controls with basic movement and snapping support."""
+    def __init__(self, x: float, y: float, w: float, h: float, text: str = "", object_id: str = None):
         super().__init__(QRectF(0, 0, w, h))
         self.setPos(x, y)
         self._color = "#008800"
@@ -20,7 +21,6 @@ class ButtonItem(QGraphicsRectItem):
     def mouseDoubleClickEvent(self, event):
         # bubble up to the scene/view; the canvas will handle event opening
         super().mouseDoubleClickEvent(event)
-        # find any views attached to the scene and call their handler
         sc = self.scene()
         try:
             for v in sc.views():
@@ -29,9 +29,59 @@ class ButtonItem(QGraphicsRectItem):
         except Exception:
             pass
 
+    def itemChange(self, change, value):
+        # Handle position snapping if moved
+        try:
+            if change == QGraphicsRectItem.GraphicsItemChange.ItemPositionChange:
+                new_pos = value
+                sc = self.scene()
+                if sc is None:
+                    return super().itemChange(change, value)
+                # get first view and read grid/snap settings
+                views = sc.views()
+                if not views:
+                    return super().itemChange(change, value)
+                v = views[0]
+                if getattr(v, 'snap_to_grid', False):
+                    gs = getattr(v, 'grid_size', 8)
+                    # round to nearest grid
+                    nx = round(new_pos.x() / gs) * gs
+                    ny = round(new_pos.y() / gs) * gs
+                    return QPointF(nx, ny)
+        except Exception:
+            pass
+        return super().itemChange(change, value)
+
+
+class ButtonItem(BaseControlItem):
+    def __init__(self, x: float, y: float, w: float, h: float, text: str = "Button", object_id: str = None):
+        super().__init__(x, y, w, h, text, object_id)
+
+
+class LabelItem(BaseControlItem):
+    def __init__(self, x: float, y: float, text: str = "Label", object_id: str = None):
+        # estimate text width/height default
+        w, h = 80, 20
+        super().__init__(x, y, w, h, text, object_id)
+
+
+class TextBoxItem(BaseControlItem):
+    def __init__(self, x: float, y: float, w: float = 120, h: float = 24, text: str = "", object_id: str = None):
+        super().__init__(x, y, w, h, text, object_id)
+
+
+class PictureBoxItem(BaseControlItem):
+    def __init__(self, x: float, y: float, w: float = 100, h: float = 80, object_id: str = None):
+        super().__init__(x, y, w, h, "", object_id)
+        # PictureBox will display a placeholder background
+        self.setBrush(QBrush(QColor("#CCCCCC")))
+
 
 class DesignerCanvas(QGraphicsView):
-    """A simple WYSIWYG canvas for placing and manipulating controls."""
+    """A simple WYSIWYG canvas for placing and manipulating controls with grid/snapping."""
+
+    # Emits handler name, e.g. 'btnOk_Click' when a control is double-clicked
+    control_double_clicked = pyqtSignal(str)
 
     def __init__(self, parent=None, width: int = 320, height: int = 240):
         super().__init__(parent)
@@ -45,6 +95,28 @@ class DesignerCanvas(QGraphicsView):
             self.setRenderHints(self.renderHints())
         self.setFixedSize(width + 2, height + 2)
 
+        # grid settings
+        self.show_grid = True
+        self.grid_size = 8
+        self.snap_to_grid = True
+
+    def drawBackground(self, painter, rect):
+        super().drawBackground(painter, rect)
+        if not self.show_grid:
+            return
+        gs = self.grid_size
+        painter.setPen(QColor(220, 220, 220))
+        left = int(rect.left()) - (int(rect.left()) % gs)
+        top = int(rect.top()) - (int(rect.top()) % gs)
+        x = left
+        while x < rect.right():
+            painter.drawLine(x, rect.top(), x, rect.bottom())
+            x += gs
+        y = top
+        while y < rect.bottom():
+            painter.drawLine(rect.left(), y, rect.right(), y)
+            y += gs
+
     @property
     def scene(self):
         """Expose the underlying QGraphicsScene (helper for tests & inspector)."""
@@ -53,10 +125,25 @@ class DesignerCanvas(QGraphicsView):
     # Emits handler name, e.g. 'btnOk_Click' when a control is double-clicked
     control_double_clicked = pyqtSignal(str)
 
-    def add_button(self, x: float, y: float, w: float = 80, h: float = 30, text: str = "Button") -> ButtonItem:
-        btn = ButtonItem(x, y, w, h, text)
+    def add_button(self, x: float, y: float, w: float = 80, h: float = 30, text: str = "Button", object_id: str = None) -> ButtonItem:
+        btn = ButtonItem(x, y, w, h, text, object_id)
         self._scene.addItem(btn)
         return btn
+
+    def add_label(self, x: float, y: float, text: str = "Label", object_id: str = None) -> LabelItem:
+        lbl = LabelItem(x, y, text, object_id)
+        self._scene.addItem(lbl)
+        return lbl
+
+    def add_textbox(self, x: float, y: float, w: float = 120, h: float = 24, text: str = "", object_id: str = None) -> TextBoxItem:
+        tb = TextBoxItem(x, y, w, h, text, object_id)
+        self._scene.addItem(tb)
+        return tb
+
+    def add_picturebox(self, x: float, y: float, w: float = 100, h: float = 80, object_id: str = None) -> PictureBoxItem:
+        pb = PictureBoxItem(x, y, w, h, object_id)
+        self._scene.addItem(pb)
+        return pb
 
     def on_item_double_clicked(self, item: ButtonItem):
         # Emit a standard handler name {object_id}_Click
