@@ -38,6 +38,11 @@ class DesignerCanvas(QGraphicsView):
             self.setRenderHints(self.renderHints())
         self.setFixedSize(width + 2, height + 2)
 
+    @property
+    def scene(self):
+        """Expose the underlying QGraphicsScene (helper for tests & inspector)."""
+        return self._scene
+
     def add_button(self, x: float, y: float, w: float = 80, h: float = 30, text: str = "Button") -> ButtonItem:
         btn = ButtonItem(x, y, w, h, text)
         self._scene.addItem(btn)
