@@ -92,12 +92,56 @@ class TextBoxItem(BaseControlItem):
     def __init__(self, x: float, y: float, w: float = 120, h: float = 24, text: str = "", object_id: str = None):
         super().__init__(x, y, w, h, text, object_id)
 
+    def set_text(self, text: str):
+        for ch in self.childItems():
+            if hasattr(ch, 'setPlainText'):
+                ch.setPlainText(text)
+
+    def trigger_on_enter(self):
+        # simulate user pressing Enter in textbox — emit control_event on canvas
+        sc = self.scene()
+        if not sc:
+            return
+        views = sc.views()
+        if not views:
+            return
+        v = views[0]
+        cid = getattr(self, 'object_id', None) or getattr(self, 'id', None)
+        if cid and hasattr(v, 'control_event'):
+            try:
+                v.control_event.emit(cid, 'OnEnter')
+            except Exception:
+                pass
+
 
 class PictureBoxItem(BaseControlItem):
     def __init__(self, x: float, y: float, w: float = 100, h: float = 80, object_id: str = None):
         super().__init__(x, y, w, h, "", object_id)
         # PictureBox will display a placeholder background
         self.setBrush(QBrush(QColor("#CCCCCC")))
+        self._pixmap_item = None
+        self._image_path = None
+
+    def load_image(self, path: str):
+        from PyQt6.QtGui import QPixmap
+        p = QPixmap(path)
+        if p.isNull():
+            raise FileNotFoundError(f"Cannot load image: {path}")
+        # remove existing pixmap child
+        if self._pixmap_item:
+            try:
+                self._scene().removeItem(self._pixmap_item)
+            except Exception:
+                pass
+        from PyQt6.QtWidgets import QGraphicsPixmapItem
+        self._pixmap_item = QGraphicsPixmapItem(p, parent=self)
+        # scale pixmap to fit rect
+        rect = self.rect()
+        self._pixmap_item.setScale(min(rect.width() / p.width(), rect.height() / p.height()))
+        self._image_path = path
+
+    def image_path(self):
+        return self._image_path
 
 
 class DesignerCanvas(QGraphicsView):
@@ -105,6 +149,8 @@ class DesignerCanvas(QGraphicsView):
 
     # Emits handler name, e.g. 'btnOk_Click' when a control is double-clicked
     control_double_clicked = pyqtSignal(str)
+    # Emits generic control events: (control_id, event_name)
+    control_event = pyqtSignal(str, str)
 
     def __init__(self, parent=None, width: int = 320, height: int = 240):
         super().__init__(parent)
